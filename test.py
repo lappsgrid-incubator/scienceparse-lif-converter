@@ -8,8 +8,8 @@ Usage:
 $ python3 test.py JSON_DIR LIF_DIR TXT_DIR
 
 The first directory is the one with JSON files created by science parse, the
-second the target for LIF files and the third the target for TXT files. All
-directories are asusmed to exist.
+second the target for LIF files and the third the target for text files. All
+directories are assumed to exist.
 
 """
 
