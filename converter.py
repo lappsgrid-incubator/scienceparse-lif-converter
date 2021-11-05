@@ -1,7 +1,32 @@
+"""converter.py
+
+Takes a JSON ScienceParse file and converts it into LIF.
+
+Usage:
+
+>>> from converter import Converter
+>>> converter = Converter(open('data/input.json').read())
+>>> if converter.error is None:
+...     len(converter.get_container_as_json_string())
+14039
+
+If there was an error it is stored in the error variable:
+
+>>> if converter.error is not None:
+...     print(repr(converter.error))
+
+
+"""
+
 import json
 from io import StringIO
 
+import jsonschema
+
 from lif import LIF, Container, View, Annotation
+
+
+LIF_SCHEMA = 'lif.json'
 
 
 class Converter(object):
@@ -9,12 +34,21 @@ class Converter(object):
     def __init__(self, science_parse_output):
         self.json_obj = json.loads(science_parse_output)
         self.lif_obj = LIF()
+        self.error = None
+        self.container = None
+        self.convert()
+
+    def convert(self):
         self._add_metadata()
         self._add_view()
         self._add_rest()
-        self.container = Container()
-        self.container.discriminator = "http://vocab.lappsgrid.org/ns/media/jsonld#lif"
-        self.container.payload = self.lif_obj
+        try:
+            self._validate()
+            self.container = Container()
+            self.container.discriminator = "http://vocab.lappsgrid.org/ns/media/jsonld#lif"
+            self.container.payload = self.lif_obj
+        except jsonschema.exceptions.ValidationError as e:
+            self.error = e
         
     def _add_metadata(self):
         self.lif_obj.metadata['id'] = self.json_obj.get('id')
@@ -45,10 +79,15 @@ class Converter(object):
                                      section.get('text'), offset)
         self.lif_obj.text.value = text_value.getvalue()
 
-    def as_json_string(self, indent=2):
+    def _validate(self):
+        lif_obj = self.lif_obj.as_json()
+        json_schema = json.load(open(LIF_SCHEMA))
+        jsonschema.validate(instance=lif_obj, schema=json_schema)
+
+    def get_container_as_json_string(self, indent=2):
         return json.dumps(self.container.as_json(), indent=indent)
 
-    def text_value(self):
+    def get_text_value(self):
         return self.container.payload.text.value
 
 
@@ -89,3 +128,9 @@ class IdentifierFactory(object):
     def next_id(cls, tagname):
         cls.ids[tagname] += 1
         return "{}{:04d}".format(tagname.lower(), cls.ids[tagname])
+
+
+if __name__ == '__main__':
+
+    import doctest
+    doctest.testmod()

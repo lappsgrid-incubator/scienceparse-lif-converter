@@ -31,13 +31,16 @@ def create_lif_files(science_parse_dir, lif_dir, txt_dir, test=False):
 
 
 def create_lif_file(json_file, lif_file, txt_file, test=False):
-    print("Creating {}".format(lif_file))
+    print(f"Processing {os.path.basename(json_file)}")
     with open(json_file, encoding='utf8') as fh_in, \
          open(lif_file, 'w', encoding='utf8') as fh_out_lif, \
          open(txt_file, 'w', encoding='utf8') as fh_out_txt:
         c = Converter(fh_in.read())
-        fh_out_lif.write(c.as_json_string())
-        fh_out_txt.write(c.text_value())
+        if c.error is None:
+            fh_out_lif.write(c.get_container_as_json_string())
+            fh_out_txt.write(c.get_text_value())
+        else:
+            print(repr(c.error))
     if test:
         test_lif_file(lif_file)
 

@@ -12,6 +12,8 @@ In the first invocation the script takes standard input and writes to standard
 output, in the second it reads a file and write to standard output and in the
 third it reads a file and saves output in a file.
 
+If a JSON Validation error occurs it will be written to the standard output.
+
 """
 
 
@@ -25,8 +27,12 @@ def parse(infile=None, outfile=None):
     fh_in = sys.stdin if infile is None else open(infile)
     fh_out = sys.stdout if outfile is None else open(outfile, 'w')
     data = fh_in.read()
-    container = Converter(data)
-    fh_out.write(container.as_json_string())
+    converter = Converter(data)
+    if converter.error is None:
+        json_str = converter.get_container_as_json_string()
+        fh_out.write(json_str)
+    else:
+        print(repr(converter.error))
 
 
 if __name__ == '__main__':
